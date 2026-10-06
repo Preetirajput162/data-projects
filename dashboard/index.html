@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swedish Ports &amp; Baltic Trade Monitor</title>
+<meta name="description" content="Open-data dashboard on Swedish port throughput, cargo mix, port resilience and Nordic–Baltic maritime benchmarks.">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&f[]=zodiak@500&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%230B6E79' stroke-width='3'/%3E%3Cpath d='M5 19c4-3 7 3 11 0s7 3 11 0' fill='none' stroke='%230B6E79' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="wrap top-inner">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 40 40" width="36" height="36" aria-label="Port monitor logo" role="img" fill="none">
+        <circle cx="20" cy="20" r="17" stroke="currentColor" stroke-width="2.5"/>
+        <path d="M20 3v8M20 29v8M3 20h8M29 20h8" stroke="currentColor" stroke-width="2"/>
+        <path d="M8 23c4-3.5 8 3.5 12 0s8 3.5 12 0" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <p class="eyebrow">Open maritime data · Sweden &amp; the Baltic</p>
+        <h1>Swedish Ports &amp; Baltic Trade Monitor</h1>
+      </div>
+    </div>
+    <button class="theme" id="theme" type="button" aria-label="Toggle dark mode">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+  <section class="intro">
+    <p class="lede">How much cargo moves through Swedish ports, which ports are most resilient to shocks, and how Sweden compares with its Nordic and Baltic neighbours. Built end-to-end from public Eurostat and World Bank data with a reproducible Python pipeline.</p>
+    <p class="meta" id="meta"></p>
+  </section>
+
+  <section class="kpis" aria-label="Key figures" id="kpis"></section>
+
+  <section class="grid two">
+    <article class="card">
+      <header><h2>Sweden's cargo mix, 2005–<span class="ly"></span></h2><p class="sub">Gross weight of goods handled in main Swedish ports, million tonnes</p></header>
+      <div class="chart tall"><canvas id="mix" aria-label="Stacked area chart of Swedish port cargo by type"></canvas></div>
+      <p class="note" id="mixNote"></p>
+    </article>
+    <article class="card">
+      <header><h2>Largest ports, <span class="ly"></span></h2><p class="sub">Thousand tonnes handled · <span class="sw skane"></span> Skåne ports highlighted</p></header>
+      <div class="chart tall"><canvas id="ports" aria-label="Bar chart of the 15 largest Swedish ports"></canvas></div>
+      <p class="note" id="portsNote"></p>
+    </article>
+  </section>
+
+  <section class="card">
+    <header class="split">
+      <div><h2>Port Resilience Index</h2><p class="sub" id="idxSub"></p></div>
+      <details class="method"><summary>Method</summary>
+        <p>Four components, each min–max scaled to 0–100 across ports and equally weighted:</p>
+        <ul>
+          <li><b>Growth</b> – compound annual growth of tonnage over the window.</li>
+          <li><b>Stability</b> – standard deviation of annual log changes (lower = better).</li>
+          <li><b>Downside protection</b> – maximum drawdown from a previous peak (shallower = better).</li>
+          <li><b>Cargo diversification</b> – 1 − Herfindahl index of cargo-type shares in the latest year.</li>
+        </ul>
+        <p><b>Robustness:</b> the index is recomputed under 2,000 random weightings (Dirichlet). The rank range shows the 5th–95th percentile rank; the Spearman figure is the average rank correlation with the equal-weight result.</p>
+        <p>Only ports with a complete series and ≥1 million tonnes in the latest year are included. Malmö is excluded because Eurostat publishes no Malmö figures after 2020.</p>
+      </details>
+    </header>
+    <div class="table-wrap">
+      <table class="idx" id="idx">
+        <thead><tr><th scope="col">#</th><th scope="col">Port</th><th scope="col" class="num">Index</th><th scope="col">Components</th><th scope="col" class="num">CAGR</th><th scope="col" class="num">Max drawdown</th><th scope="col">Rank range (5–95%)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="legend" id="compLegend"></div>
+  </section>
+
+  <section class="grid two">
+    <article class="card">
+      <header><h2>Nordic &amp; Baltic benchmark</h2><p class="sub">Goods handled in all ports, index 2005 = 100 · select countries</p></header>
+      <div class="chips" id="chips" role="group" aria-label="Countries"></div>
+      <div class="chart"><canvas id="ctry" aria-label="Line chart of country port volumes indexed to 2005"></canvas></div>
+    </article>
+    <article class="card">
+      <header><h2>Shock &amp; recovery profile</h2><p class="sub">Annual volume risk metrics, 2005–2024</p></header>
+      <div class="table-wrap">
+        <table class="bench" id="bench">
+          <thead><tr><th scope="col">Country</th><th scope="col" class="num">2024 (Mt)</th><th scope="col" class="num">CAGR</th><th scope="col" class="num">Volatility</th><th scope="col" class="num">2009 shock</th><th scope="col" class="num">Worst year</th><th scope="col" class="num">2024 vs 2019</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="note">Volatility = standard deviation of annual log changes. Worst year = largest single-year fall.</p>
+    </article>
+  </section>
+
+  <section class="grid two">
+    <article class="card">
+      <header class="split"><div><h2>Containers &amp; connectivity</h2><p class="sub" id="wbSub"></p></div>
+        <div class="tabs" role="tablist"><button role="tab" aria-selected="true" data-k="teu">TEU</button><button role="tab" aria-selected="false" data-k="lsci">Connectivity</button></div></header>
+      <div class="chart"><canvas id="wb" aria-label="World Bank container traffic or liner connectivity chart"></canvas></div>
+    </article>
+    <article class="card">
+      <header><h2>Skåne ports</h2><p class="sub">Million tonnes handled · the ports around Malmö and Lund</p></header>
+      <div class="chart"><canvas id="skane" aria-label="Line chart of Skåne port volumes"></canvas></div>
+      <p class="note">Gaps reflect years Eurostat does not publish (confidentiality or reporting changes).</p>
+    </article>
+  </section>
+
+  <section class="card findings">
+    <h2>Key findings</h2>
+    <ol id="findings"></ol>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  <p><b>Sources:</b>
+    <a href="https://ec.europa.eu/eurostat/databrowser/view/mar_go_am_se/default/table" target="_blank" rel="noopener">Eurostat mar_go_am_se</a> (Swedish ports by cargo type),
+    <a href="https://ec.europa.eu/eurostat/databrowser/view/mar_mg_aa_cwhd/default/table" target="_blank" rel="noopener">Eurostat mar_mg_aa_cwhd</a> (country totals),
+    <a href="https://data.worldbank.org/indicator/IS.SHP.GOOD.TU" target="_blank" rel="noopener">World Bank container port traffic</a>,
+    <a href="https://data.worldbank.org/indicator/IS.SHP.GCNW.XQ" target="_blank" rel="noopener">World Bank / UNCTAD Liner Shipping Connectivity Index</a>.</p>
+  <p>Analysis and dashboard by Preeti Rajpoot · Python (pandas, NumPy) pipeline with automated validation checks · Chart.js.</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
